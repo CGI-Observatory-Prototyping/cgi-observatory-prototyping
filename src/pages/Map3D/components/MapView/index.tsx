@@ -40,15 +40,10 @@ const NUTS3_CITY_LAYER_ID = "nuts3-city-layer"
 const NUTS3_NONCITY_SOURCE_ID = "nuts3-noncity-source"
 const NUTS3_NONCITY_LAYER_ID = "nuts3-noncity-layer"
 
-// const buildTilesUrl = (layer: string, type: string="3d", split: string="city") =>
-//     `${window.location.origin}/api/tiles/layer/${type}/${layer}/${YEAR}/${split}/{z}/{x}/{y}.${VECTOR_TYPE}`;
-
-const buildTilesUrl = (layer: string, bd: string, split: string="active") =>
-    `${window.location.origin}/api/tiles/layer/3d/${layer}/${YEAR}/${bd}/${split}/{z}/{x}/{y}.${VECTOR_TYPE}`;
-
 const buildTilesURL_S3 = (bd: string, split: string="active") => {
     return `https://d1yxfth9bblueo.cloudfront.net/${bd}_${split}.pmtiles`
 }
+
 // The feature property that holds the numeric city value.
 // Must match what buildIndicatorGeoJSON() writes into each feature.
 
@@ -230,7 +225,6 @@ export default function MapView(props: MapViewProps): React.ReactNode {
         if(!map) return;
         map.addSource(POP3D_CITY_SOURCE_ID, {
             type: "vector",
-            // tiles: [buildTilesUrl(layerData, boundary, "active")],
             url: buildTilesURL_S3(boundary, "active"),
             minzoom: 2,
             maxzoom: 10,
@@ -272,7 +266,6 @@ export default function MapView(props: MapViewProps): React.ReactNode {
         if(!map) return;
         map.addSource(POP3D_NONCITY_SOURCE_ID, {
             type: "vector",
-            // tiles: [buildTilesUrl(layerData, boundary, "inactive")],
             url: buildTilesURL_S3(boundary, "inactive"),
             minzoom: 2,
             maxzoom: 10,

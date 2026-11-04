@@ -12,6 +12,7 @@ import MapboxLanguage from '@mapbox/mapbox-gl-language';
 import { applyMapLabelStyle } from '@/mapLabelStyle';
 import DebugInfo from "@/components/DebugInfo";
 import boundaries from "@/services/mockdata/boundaries";
+import {s3BucketUrl} from "@/services/endpoints";
 
 interface MapViewProps {
     citySchema: Array<City>;
@@ -44,10 +45,16 @@ const RASTER_TYPE: Record<string, string> = {
 // Pages only serves static files; production can use an external tile API.
 const tileApiBase = (process.env.TILE_API_BASE_URL || window.location.origin).replace(/\/$/, '');
 
-const buildTilesUrl = (layer: string, year: number, type: string="flat") =>
-    type=="3d"
-        ?`${tileApiBase}/api/tiles/layer/${type}/${layer}/${year}/all/{z}/{x}/{y}.${RASTER_TYPE[type]}`
-        :`${tileApiBase}/api/tiles/layer/${type}/${layer}/${year}/{z}/{x}/{y}.${RASTER_TYPE[type]}`;
+// const buildTilesUrl = (layer: string, year: number, type: string="flat") =>
+//     type=="3d"
+//         ?`${tileApiBase}/api/tiles/layer/${type}/${layer}/${year}/all/{z}/{x}/{y}.${RASTER_TYPE[type]}`
+//         :`${tileApiBase}/api/tiles/layer/${type}/${layer}/${year}/{z}/{x}/{y}.${RASTER_TYPE[type]}`;
+
+const buildTilesUrl = (layer: string, year: number) => {
+    return `${s3BucketUrl}${layer}_euro_tms_${year}.pmtiles`;
+}
+
+// https://cgi-observatory-prototyping.s3.eu-west-2.amazonaws.com/ghs_pop_euro_2010.pmtiles
 
 // The feature property that holds the numeric city value.
 // Must match what buildIndicatorGeoJSON() writes into each feature.
@@ -331,104 +338,121 @@ export default function MapView(props: MapViewProps): React.ReactNode {
             }
         }
 
-
-        // Only add back if a layer key was provided.
         if (!layerData) return;
-        // map.on('click', RASTER_LAYER_ID, (e) => {
-        //     console.log(e.features[0].properties);
-        // });
-        console.log("===layerData===", layerData)
-        if(layerData.endsWith("3d")){
-            map.setMaxZoom(initMapState.maxZoom3D);
-            map.setMinZoom(initMapState.minZoom3D);
-            map.addSource(RASTER_SOURCE_ID, {
-                type: "vector",
-                tiles: [buildTilesUrl(layerData, ghsYear, "3d")],
-                // url: "https://d1yxfth9bblueo.cloudfront.net/ghs_pop_3d_euro_all.pmtiles",
-                minzoom: 0,
-                maxzoom: 10,
-                attribution: "© European Commission JRC GHSL",
-                tileSize: 512,
-            });
+        // if(layerData.endsWith("3d")){
+        //     map.setMaxZoom(initMapState.maxZoom3D);
+        //     map.setMinZoom(initMapState.minZoom3D);
+        //     map.addSource(RASTER_SOURCE_ID, {
+        //         type: "vector",
+        //         tiles: [buildTilesUrl(layerData, ghsYear, "3d")],
+        //         // url: "https://d1yxfth9bblueo.cloudfront.net/ghs_pop_3d_euro_all.pmtiles",
+        //         minzoom: 0,
+        //         maxzoom: 10,
+        //         attribution: "© European Commission JRC GHSL",
+        //         tileSize: 512,
+        //     });
+        //
+        //     map.addLayer({
+        //         id: RASTER_LAYER_ID,
+        //         type: "fill-extrusion",
+        //         source: RASTER_SOURCE_ID,
+        //         "source-layer": "population",   // ← must match --layer= in tippecanoe
+        //         filter: [">=", ["to-number", ["get", "pop"], 100], 0],
+        //         paint: {
+        //             "fill-extrusion-height": [
+        //                 "interpolate", ["linear"], ["zoom"],
+        //                 2,  ["*", ["get", "pop"], 0.24],
+        //                 4,  ["*", ["get", "pop"], 0.24],
+        //                 5,  ["*", ["get", "pop"],  0.64],
+        //                 7,  ["*", ["get", "pop"],  0.64],
+        //                 8,  ["*", ["get", "pop"],  3.19],
+        //                 10, ["*", ["get", "pop"],  1.50],
+        //             ],
+        //             // "fill-extrusion-color": [
+        //             //     "interpolate", ["linear"],
+        //             //     ["ln", ["max", ["get", "pop"], 1]],
+        //             //     0,    "rgb(255,255,255)",
+        //             //     4.0,  "rgb(246, 242, 233)",
+        //             //     8.0,  "rgb(238, 232, 215)",
+        //             //     11.5, "rgb(195, 211, 186)",
+        //             //     12.5, "rgb(21, 86, 96)",
+        //             // ],
+        //             "fill-extrusion-color": [
+        //                 "case",
+        //                 ["==", ["to-number", ["get", "isCity"]], 0], "#888888",
+        //                 ["interpolate", ["linear"], ["get", "pop"],
+        //                     0, "#ffbebe",
+        //                     50000, "#ec5656",
+        //                     500000, "#7f0000"
+        //                 ]
+        //             ],
+        //             "fill-extrusion-opacity": [
+        //                 "interpolate", ["linear"], ["zoom"],
+        //                 2,  0.95,
+        //                 8,  0.90,
+        //                 10, 0.85,
+        //             ],
+        //             "fill-extrusion-cutoff-fade-range": 0.15,
+        //             // "fill-extrusion-vertical-gradient": true,
+        //             // "fill-extrusion-base": 0,
+        //         }
+        //     },"settlement-subdivision-label");
+        //
+        //     // map.on('click', RASTER_LAYER_ID, (e) => {
+        //     //     if (e.features.length > 0) {
+        //     //         const props = e.features[0].properties;
+        //     //         console.log('pop:', props.pop, 'isCity:', props.isCity, typeof props.isCity);
+        //     //         alert(`pop: ${props.pop}, isCity: ${props.isCity}, type: ${typeof props.isCity}`);
+        //     //     }
+        //     // });
+        //
+        //     onResetViewPort(true, false);
+        // }else{
+        //     map.setMaxZoom(initMapState.maxZoom);
+        //     map.setMinZoom(initMapState.minZoom);
+        //     map.addSource(RASTER_SOURCE_ID, {
+        //         type: "raster",
+        //         tiles: [buildTilesUrl(layerData, ghsYear, "flat")],
+        //         tileSize: 256,
+        //         minzoom: 0,
+        //         maxzoom: 8,
+        //         attribution: "© European Commission JRC GHSL",
+        //     });
+        //
+        //     map.addLayer(
+        //         {
+        //             id: RASTER_LAYER_ID,
+        //             type: "raster",
+        //             source: RASTER_SOURCE_ID,
+        //             paint: PAINTS[layerData],
+        //         },
+        //         "settlement-subdivision-label"
+        //     );
+        //
+        // }
 
-            map.addLayer({
+        map.setMaxZoom(initMapState.maxZoom);
+        map.setMinZoom(initMapState.minZoom);
+        map.addSource(RASTER_SOURCE_ID, {
+            type: "raster",
+            // tiles: [buildTilesUrl(layerData, ghsYear, "flat")],
+            url: buildTilesUrl(layerData, ghsYear),
+            tileSize: 256,
+            minzoom: 0,
+            maxzoom: 8,
+            attribution: "© European Commission JRC GHSL",
+        });
+
+        map.addLayer(
+            {
                 id: RASTER_LAYER_ID,
-                type: "fill-extrusion",
-                source: RASTER_SOURCE_ID,
-                "source-layer": "population",   // ← must match --layer= in tippecanoe
-                filter: [">=", ["to-number", ["get", "pop"], 100], 0],
-                paint: {
-                    "fill-extrusion-height": [
-                        "interpolate", ["linear"], ["zoom"],
-                        2,  ["*", ["get", "pop"], 0.24],
-                        4,  ["*", ["get", "pop"], 0.24],
-                        5,  ["*", ["get", "pop"],  0.64],
-                        7,  ["*", ["get", "pop"],  0.64],
-                        8,  ["*", ["get", "pop"],  3.19],
-                        10, ["*", ["get", "pop"],  1.50],
-                    ],
-                    // "fill-extrusion-color": [
-                    //     "interpolate", ["linear"],
-                    //     ["ln", ["max", ["get", "pop"], 1]],
-                    //     0,    "rgb(255,255,255)",
-                    //     4.0,  "rgb(246, 242, 233)",
-                    //     8.0,  "rgb(238, 232, 215)",
-                    //     11.5, "rgb(195, 211, 186)",
-                    //     12.5, "rgb(21, 86, 96)",
-                    // ],
-                    "fill-extrusion-color": [
-                        "case",
-                        ["==", ["to-number", ["get", "isCity"]], 0], "#888888",
-                        ["interpolate", ["linear"], ["get", "pop"],
-                            0, "#ffbebe",
-                            50000, "#ec5656",
-                            500000, "#7f0000"
-                        ]
-                    ],
-                    "fill-extrusion-opacity": [
-                        "interpolate", ["linear"], ["zoom"],
-                        2,  0.95,
-                        8,  0.90,
-                        10, 0.85,
-                    ],
-                    "fill-extrusion-cutoff-fade-range": 0.15,
-                    // "fill-extrusion-vertical-gradient": true,
-                    // "fill-extrusion-base": 0,
-                }
-            },"settlement-subdivision-label");
-
-            // map.on('click', RASTER_LAYER_ID, (e) => {
-            //     if (e.features.length > 0) {
-            //         const props = e.features[0].properties;
-            //         console.log('pop:', props.pop, 'isCity:', props.isCity, typeof props.isCity);
-            //         alert(`pop: ${props.pop}, isCity: ${props.isCity}, type: ${typeof props.isCity}`);
-            //     }
-            // });
-
-            onResetViewPort(true, false);
-        }else{
-            map.setMaxZoom(initMapState.maxZoom);
-            map.setMinZoom(initMapState.minZoom);
-            map.addSource(RASTER_SOURCE_ID, {
                 type: "raster",
-                tiles: [buildTilesUrl(layerData, ghsYear, "flat")],
-                tileSize: 256,
-                minzoom: 0,
-                maxzoom: 8,
-                attribution: "© European Commission JRC GHSL",
-            });
+                source: RASTER_SOURCE_ID,
+                paint: PAINTS[layerData],
+            },
+            "settlement-subdivision-label"
+        );
 
-            map.addLayer(
-                {
-                    id: RASTER_LAYER_ID,
-                    type: "raster",
-                    source: RASTER_SOURCE_ID,
-                    paint: PAINTS[layerData],
-                },
-                "settlement-subdivision-label"
-            );
-
-        }
         // map.moveLayer('my-layer');
     }, [layerData, ghsYear, boundary, boundaries]);
 
