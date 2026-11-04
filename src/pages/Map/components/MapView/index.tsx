@@ -41,10 +41,13 @@ const RASTER_TYPE: Record<string, string> = {
     "3d": "pbf"
 }
 
+// Pages only serves static files; production can use an external tile API.
+const tileApiBase = (process.env.TILE_API_BASE_URL || window.location.origin).replace(/\/$/, '');
+
 const buildTilesUrl = (layer: string, year: number, type: string="flat") =>
     type=="3d"
-        ?`${window.location.origin}/api/tiles/layer/${type}/${layer}/${year}/all/{z}/{x}/{y}.${RASTER_TYPE[type]}`
-        :`${window.location.origin}/api/tiles/layer/${type}/${layer}/${year}/{z}/{x}/{y}.${RASTER_TYPE[type]}`;
+        ?`${tileApiBase}/api/tiles/layer/${type}/${layer}/${year}/all/{z}/{x}/{y}.${RASTER_TYPE[type]}`
+        :`${tileApiBase}/api/tiles/layer/${type}/${layer}/${year}/{z}/{x}/{y}.${RASTER_TYPE[type]}`;
 
 // The feature property that holds the numeric city value.
 // Must match what buildIndicatorGeoJSON() writes into each feature.

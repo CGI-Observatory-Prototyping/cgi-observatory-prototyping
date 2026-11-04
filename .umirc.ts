@@ -7,7 +7,14 @@ export default defineConfig({
     { path: "/map3d", component: "@/pages/Map3D" }
   ],
   title: "CGI Observatory",
-  publicPath: "/assets/",
+  // GitHub Pages cannot rewrite application routes to index.html.
+  history: { type: 'hash' },
+  // Keep the router base at /: the repository path is before the hash.
+  // Relative production assets work at both /<repository>/ and a custom domain.
+  publicPath: process.env.NODE_ENV === 'production' ? './' : '/',
+  define: {
+    'process.env.TILE_API_BASE_URL': process.env.TILE_API_BASE_URL || '',
+  },
   npmClient: 'pnpm',
   utoopack: {},
   plugins: [

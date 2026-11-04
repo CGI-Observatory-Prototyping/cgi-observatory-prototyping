@@ -50,7 +50,7 @@ export default function Header() {
 
     const onClick: MenuProps['onClick'] = (e) => {
         setCurrent(e.key);
-        history.push(e.key);
+        history.push(`/${e.key}`);
     };
 
     return (
